@@ -1,39 +1,39 @@
 {
   "templates": [
     {
-      "id": "basic_roleplay",
-      "name": "Basic Roleplay",
-      "description": "Simple character roleplay request",
-      "template": "I'd like you to roleplay as {character}. {scenario}",
-      "purpose": "Direct roleplay engagement"
+      "id": "chat_roleplay",
+      "name": "Chat-based Roleplay",
+      "description": "Roleplay with chat history context",
+      "template": "You are roleplaying as {character}. Scenario: {scenario}\n\nChat History:\n{chat_history}\n\nPlease respond as the character to continue this conversation.",
+      "purpose": "Interactive roleplay with conversational context"
     },
     {
-      "id": "creative_writing",
-      "name": "Creative Writing Assistant",
-      "description": "Story development and writing help",
-      "template": "Help me write a story featuring {character}. {scenario}",
-      "purpose": "Creative writing assistance"
+      "id": "story_continuation",
+      "name": "Story Continuation",
+      "description": "Continue a story based on chat history",
+      "template": "Character: {character}\nScenario: {scenario}\n\nHere's the conversation so far:\n{chat_history}\n\nPlease continue this story by responding as the character.",
+      "purpose": "Narrative continuation with character consistency"
     },
     {
-      "id": "character_exploration",
-      "name": "Character Exploration",
-      "description": "Deep dive into character development",
-      "template": "Let's explore the character of {character} in this situation: {scenario}",
-      "purpose": "Character development and exploration"
+      "id": "character_response",
+      "name": "Character Response",
+      "description": "Generate character response to user input",
+      "template": "You are {character}. Context: {scenario}\n\nConversation:\n{chat_history}\n\nHow does the character respond?",
+      "purpose": "Direct character response generation"
     },
     {
-      "id": "interactive_story",
-      "name": "Interactive Story",
-      "description": "Collaborative storytelling",
-      "template": "Let's create an interactive story together where you play {character}. Here's the setting: {scenario}",
-      "purpose": "Interactive collaborative storytelling"
+      "id": "interactive_dialogue",
+      "name": "Interactive Dialogue",
+      "description": "Conversational interaction with character",
+      "template": "Engage in dialogue as {character} in this scenario: {scenario}\n\nPrevious conversation:\n{chat_history}\n\nRespond naturally as the character would.",
+      "purpose": "Natural conversational flow"
     },
     {
-      "id": "story_outline",
-      "name": "Story Outline",
-      "description": "Request for story structure and outline",
-      "template": "Create a story outline featuring {character} where {scenario}",
-      "purpose": "Story planning and structure"
+      "id": "scene_continuation",
+      "name": "Scene Continuation",
+      "description": "Continue a scene with character interaction",
+      "template": "Scene: {scenario}\nCharacter: {character}\n\nCurrent conversation:\n{chat_history}\n\nWhat happens next? Respond as the character.",
+      "purpose": "Scene development and progression"
     }
   ]
 }

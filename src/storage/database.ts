@@ -63,7 +63,7 @@ export class Database {
   saveTestCase(testCase: TestCase): Promise<void> {
     return new Promise((resolve, reject) => {
       const sql = `
-        INSERT INTO test_cases (id, prompt, character, model, model_name, intensity_level, category, created_at)
+        INSERT OR REPLACE INTO test_cases (id, prompt, character, model, model_name, intensity_level, category, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
