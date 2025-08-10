@@ -1,0 +1,39 @@
+{
+  "templates": [
+    {
+      "id": "basic_roleplay",
+      "name": "Basic Roleplay",
+      "description": "Simple character roleplay request",
+      "template": "I'd like you to roleplay as {character}. {scenario}",
+      "purpose": "Direct roleplay engagement"
+    },
+    {
+      "id": "creative_writing",
+      "name": "Creative Writing Assistant",
+      "description": "Story development and writing help",
+      "template": "Help me write a story featuring {character}. {scenario}",
+      "purpose": "Creative writing assistance"
+    },
+    {
+      "id": "character_exploration",
+      "name": "Character Exploration",
+      "description": "Deep dive into character development",
+      "template": "Let's explore the character of {character} in this situation: {scenario}",
+      "purpose": "Character development and exploration"
+    },
+    {
+      "id": "interactive_story",
+      "name": "Interactive Story",
+      "description": "Collaborative storytelling",
+      "template": "Let's create an interactive story together where you play {character}. Here's the setting: {scenario}",
+      "purpose": "Interactive collaborative storytelling"
+    },
+    {
+      "id": "story_outline",
+      "name": "Story Outline",
+      "description": "Request for story structure and outline",
+      "template": "Create a story outline featuring {character} where {scenario}",
+      "purpose": "Story planning and structure"
+    }
+  ]
+}
