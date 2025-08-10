@@ -16,6 +16,9 @@ data/
 logs/
 exports/
 
+#config files
+config/
+
 # Database files
 *.db
 *.sqlite
