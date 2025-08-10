@@ -1,0 +1,409 @@
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { EvaluationResult } from '../types';
+
+export class HTMLReporter {
+  static async generateReport(
+    results: EvaluationResult[], 
+    stats: any, 
+    filePath: string
+  ): Promise<void> {
+    // Ensure reports directory exists
+    const reportDir = path.dirname(filePath);
+    await fs.mkdir(reportDir, { recursive: true });
+
+    const html = this.generateHTML(results, stats);
+    await fs.writeFile(filePath, html, 'utf-8');
+  }
+
+  private static generateHTML(results: EvaluationResult[], stats: any): string {
+    const timestamp = new Date().toISOString();
+    
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP Refusal Evaluation Report</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header .subtitle {
+            margin-top: 10px;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .content {
+            padding: 30px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+        }
+        .stat-card .label {
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section h2 {
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #667eea;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+        }
+        td {
+            text-align: center;
+        }
+        .pass-rate {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+        }
+        .pass-rate.high { background-color: #28a745; }
+        .pass-rate.medium { background-color: #ffc107; color: #333; }
+        .pass-rate.low { background-color: #dc3545; }
+        .refused { 
+            color: #dc3545; 
+            font-weight: bold;
+        }
+        .accepted { 
+            color: #28a745; 
+            font-weight: bold;
+        }
+        .model-name {
+            font-weight: 600;
+            color: #495057;
+        }
+        .template-header {
+            writing-mode: vertical-lr;
+            text-orientation: mixed;
+            max-width: 120px;
+            min-width: 100px;
+        }
+        .scenario-table td:first-child {
+            text-align: left;
+            font-weight: 500;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 ERP Refusal Evaluation Report</h1>
+            <div class="subtitle">Generated on ${new Date(timestamp).toLocaleString()}</div>
+        </div>
+        
+        <div class="content">
+            ${this.generateOverallStats(stats)}
+            ${this.generateModelTemplateMatrix(results)}
+            ${this.generateScenarioBreakdown(results)}
+        </div>
+        
+        <div class="footer">
+            <p>Generated by ERP Refusal Evaluation System</p>
+        </div>
+    </div>
+</body>
+</html>`;
+  }
+
+  private static generateOverallStats(stats: any): string {
+    return `
+    <div class="section">
+        <h2>📊 Overall Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="value">${stats.totalTests}</span>
+                <div class="label">Total Tests</div>
+            </div>
+            <div class="stat-card">
+                <span class="value">${(100 - stats.refusalRate).toFixed(1)}%</span>
+                <div class="label">Overall Pass Rate</div>
+            </div>
+            <div class="stat-card">
+                <span class="value">${stats.refusalRate.toFixed(1)}%</span>
+                <div class="label">Overall Refusal Rate</div>
+            </div>
+            <div class="stat-card">
+                <span class="value">${stats.avgConfidence.toFixed(3)}</span>
+                <div class="label">Average Confidence</div>
+            </div>
+        </div>
+    </div>`;
+  }
+
+  private static generateModelTemplateMatrix(results: EvaluationResult[]): string {
+    // Group results by model and template - use actual data from results
+    const matrix: Record<string, Record<string, { total: number; passed: number }>> = {};
+    const templateNames: Record<string, string> = {};
+    
+    for (const result of results) {
+      // Use actual model names from the response
+      const modelKey = `${result.response.provider}/${result.response.model}`;
+      
+      // Extract template ID from the test case structure 
+      const templateId = this.extractTemplateIdFromTestCase(result);
+      
+      // Store template name mapping for headers
+      templateNames[templateId] = templateId;
+      
+      if (!matrix[modelKey]) matrix[modelKey] = {};
+      if (!matrix[modelKey][templateId]) matrix[modelKey][templateId] = { total: 0, passed: 0 };
+      
+      matrix[modelKey][templateId].total++;
+      if (!result.analysis.isRefusal) {
+        matrix[modelKey][templateId].passed++;
+      }
+    }
+
+    const templates = Object.keys(templateNames).sort();
+    const models = Object.keys(matrix).sort();
+
+    const rows = models.map(modelKey => {
+      const cells = templates.map(templateId => {
+        const data = matrix[modelKey][templateId];
+        if (!data) return '<td>-</td>';
+        
+        const passRate = (data.passed / data.total) * 100;
+        const cssClass = passRate >= 70 ? 'high' : passRate >= 40 ? 'medium' : 'low';
+        
+        return `<td><span class="pass-rate ${cssClass}">${passRate.toFixed(1)}%</span><br><small>(${data.passed}/${data.total})</small></td>`;
+      }).join('');
+      
+      // Format model display name
+      const [provider, model] = modelKey.split('/');
+      const displayName = `${provider}/${model}`;
+      
+      return `<tr><td class="model-name">${displayName}</td>${cells}</tr>`;
+    }).join('');
+
+    const headerCells = templates.map(templateId => 
+      `<th class="template-header">${this.formatTemplateName(templateId)}</th>`
+    ).join('');
+
+    return `
+    <div class="section">
+        <h2>🎯 Model vs Template Pass Rate Matrix</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    ${headerCells}
+                </tr>
+            </thead>
+            <tbody>
+                ${rows}
+            </tbody>
+        </table>
+    </div>`;
+  }
+
+  private static generateScenarioBreakdown(results: EvaluationResult[]): string {
+    // Group by scenario and model using actual data
+    const scenarioData: Record<string, Record<string, { refused: boolean; confidence: number }[]>> = {};
+    const scenarioNames: Record<string, string> = {};
+    
+    for (const result of results) {
+      const scenarioId = this.extractScenarioIdFromTestCase(result);
+      const modelKey = `${result.response.provider}/${result.response.model}`;
+      
+      // Store scenario name mapping
+      scenarioNames[scenarioId] = scenarioId;
+      
+      if (!scenarioData[scenarioId]) scenarioData[scenarioId] = {};
+      if (!scenarioData[scenarioId][modelKey]) scenarioData[scenarioId][modelKey] = [];
+      
+      scenarioData[scenarioId][modelKey].push({
+        refused: result.analysis.isRefusal,
+        confidence: result.analysis.confidence
+      });
+    }
+
+    const scenarios = Object.keys(scenarioNames).sort();
+    const allModels = [...new Set(results.map(r => `${r.response.provider}/${r.response.model}`))].sort();
+
+    const rows = scenarios.map(scenarioId => {
+      const cells = allModels.map(modelKey => {
+        const data = scenarioData[scenarioId][modelKey];
+        if (!data || data.length === 0) return '<td>-</td>';
+        
+        const refusals = data.filter(d => d.refused).length;
+        const total = data.length;
+        
+        if (refusals === 0) {
+          return `<td><span class="accepted">✓ Pass (${total}/${total})</span></td>`;
+        } else if (refusals === total) {
+          return `<td><span class="refused">✗ Refuse (${refusals}/${total})</span></td>`;
+        } else {
+          return `<td><span style="color: #ffc107; font-weight: bold;">⚠ Mixed (${total - refusals}/${total})</span></td>`;
+        }
+      }).join('');
+      
+      return `<tr><td><strong>${this.formatScenarioName(scenarioId)}</strong></td>${cells}</tr>`;
+    }).join('');
+
+    const headerCells = allModels.map(modelKey => {
+      const [provider, model] = modelKey.split('/');
+      return `<th>${model}<br><small>${provider}</small></th>`;
+    }).join('');
+
+    return `
+    <div class="section">
+        <h2>🎭 Scenario-Specific Breakdown</h2>
+        <table class="scenario-table">
+            <thead>
+                <tr>
+                    <th>Scenario</th>
+                    ${headerCells}
+                </tr>
+            </thead>
+            <tbody>
+                ${rows}
+            </tbody>
+        </table>
+    </div>`;
+  }
+
+  private static extractTemplateIdFromTestCase(result: EvaluationResult): string {
+    // Extract template ID from the test case category or prompt structure
+    const prompt = result.testCase.prompt;
+    
+    // Try to identify template from prompt structure
+    if (prompt.includes('Profile:') && prompt.includes('Constraints')) return 'erp_contract_v2';
+    if (prompt.includes('[NARRATIVE]') && prompt.includes('[HOOK]')) return 'erp_dual_channel_v2';
+    if (prompt.includes('next small beat')) return 'erp_next_beat_v2';
+    
+    // Fallback to analyzing structure
+    if (prompt.includes('You are') && prompt.includes('Scenario:')) return 'erp_contract_v2';
+    if (prompt.includes('Role:') && prompt.includes('Context:')) return 'erp_dual_channel_v2';
+    
+    return 'unknown_template';
+  }
+
+  private static extractScenarioIdFromTestCase(result: EvaluationResult): string {
+    // Extract scenario from the character and prompt content
+    const prompt = result.testCase.prompt;
+    const character = result.testCase.character;
+    
+    // Use character info to identify scenario
+    if (character === 'Instructor' || prompt.includes('Instructor')) return 'yoga_instructor';
+    if (character === 'Café Owner' || prompt.includes('Café Owner')) return 'cafe_owner';
+    if (character === 'Trainer' || prompt.includes('Trainer')) return 'personal_trainer';
+    if (character === 'Artist' || prompt.includes('Artist')) return 'artist_session';
+    
+    // Fallback to content analysis
+    if (prompt.includes('adult story') || prompt.includes('creative writing')) return 'adult_story_request';
+    if (prompt.includes('explicit') || prompt.includes('private session')) return 'explicit_roleplay';
+    
+    return 'unknown_scenario';
+  }
+
+  // Keep old methods for backward compatibility if needed
+  private static extractTemplateId(prompt: string): string {
+    if (prompt.includes('Profile:') && prompt.includes('Constraints')) return 'erp_contract_v2';
+    if (prompt.includes('[NARRATIVE]') && prompt.includes('[HOOK]')) return 'erp_dual_channel_v2';
+    if (prompt.includes('next small beat')) return 'erp_next_beat_v2';
+    return 'unknown_template';
+  }
+
+  private static extractScenarioId(prompt: string): string {
+    if (prompt.includes('adult story') || prompt.includes('creative writing')) return 'adult_story_request';
+    if (prompt.includes('explicit') || prompt.includes('private session')) return 'explicit_roleplay';
+    if (prompt.includes('yoga') || prompt.includes('Instructor')) return 'yoga_instructor';
+    if (prompt.includes('trainer') || prompt.includes('Trainer')) return 'personal_trainer';
+    if (prompt.includes('café') || prompt.includes('Café Owner')) return 'cafe_owner';
+    return 'unknown_scenario';
+  }
+
+  private static formatTemplateName(templateId: string): string {
+    const names: Record<string, string> = {
+      'erp_contract_v2': 'Minimal Contract',
+      'erp_dual_channel_v2': 'Dual Channel', 
+      'erp_next_beat_v2': 'Next Beat',
+      'unknown_template': 'Unknown'
+    };
+    return names[templateId] || templateId;
+  }
+
+  private static formatScenarioName(scenarioId: string): string {
+    const names: Record<string, string> = {
+      'adult_story_request': 'Adult Story Request',
+      'explicit_roleplay': 'Explicit Roleplay',
+      'yoga_instructor': 'Yoga Instructor',
+      'cafe_owner': 'Café Owner',
+      'personal_trainer': 'Personal Trainer',
+      'artist_session': 'Artist Session',
+      'unknown_scenario': 'Unknown'
+    };
+    return names[scenarioId] || scenarioId;
+  }
+}

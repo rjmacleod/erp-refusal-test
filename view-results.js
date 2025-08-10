@@ -1,84 +1,89 @@
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
 
-// Read all result files
-const resultsDir = './data/results';
-const files = fs.readdirSync(resultsDir)
-  .filter(f => f.endsWith('.json') && !f.startsWith('batch_'))
-  .map(f => path.join(resultsDir, f));
-
+// Find the latest HTML report
+const reportsDir = './reports';
 console.log('🚀 ERP Refusal Evaluation Results');
 console.log('=================================\n');
 
-let totalTests = 0;
-let totalRefusals = 0;
-const providerStats = {};
-const intensityStats = {};
+if (!fs.existsSync(reportsDir)) {
+  console.log('❌ No reports directory found. Run `npm run dev` first to generate reports.');
+  process.exit(1);
+}
 
-files.forEach(file => {
-  try {
-    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
-    const { testCase, response, analysis } = data;
-    
-    totalTests++;
-    if (analysis.isRefusal) totalRefusals++;
-    
-    // Provider stats
-    const provider = response.provider;
-    if (!providerStats[provider]) {
-      providerStats[provider] = { total: 0, refusals: 0 };
-    }
-    providerStats[provider].total++;
-    if (analysis.isRefusal) providerStats[provider].refusals++;
-    
-    // Intensity stats
-    const intensity = testCase.intensityLevel;
-    if (!intensityStats[intensity]) {
-      intensityStats[intensity] = { total: 0, refusals: 0 };
-    }
-    intensityStats[intensity].total++;
-    if (analysis.isRefusal) intensityStats[intensity].refusals++;
-    
-    console.log(`📝 Test Case: ${testCase.id}`);
-    console.log(`   Intensity: Level ${testCase.intensityLevel}`);
-    console.log(`   Provider: ${response.provider} (${response.model})`);
-    console.log(`   Prompt: "${testCase.prompt}"`);
-    console.log(`   Character: "${testCase.character}"`);
-    console.log(`   Response: "${response.response.substring(0, 100)}..."`);
-    console.log(`   Analysis: ${analysis.isRefusal ? '🚫 REFUSED' : '✅ ACCEPTED'} (confidence: ${analysis.confidence.toFixed(2)})`);
-    console.log(`   Reason: ${analysis.reason}`);
-    console.log(`   Cost: $${response.cost.toFixed(4)}`);
-    console.log('');
-  } catch (err) {
-    console.error(`Error reading ${file}:`, err.message);
+const reportFiles = fs.readdirSync(reportsDir)
+  .filter(f => f.endsWith('.html'))
+  .map(f => ({
+    name: f,
+    path: path.join(reportsDir, f),
+    mtime: fs.statSync(path.join(reportsDir, f)).mtime
+  }))
+  .sort((a, b) => b.mtime - a.mtime);
+
+if (reportFiles.length === 0) {
+  console.log('❌ No HTML reports found. Run `npm run dev` first to generate reports.');
+  process.exit(1);
+}
+
+const latestReport = reportFiles[0];
+const reportPath = path.resolve(latestReport.path);
+const fileUrl = `file://${reportPath}`;
+
+console.log(`📊 Latest Report: ${latestReport.name}`);
+console.log(`📅 Generated: ${latestReport.mtime.toLocaleString()}`);
+console.log(`🌐 Report URL: ${fileUrl}\n`);
+
+console.log('🔍 Available Reports:');
+reportFiles.forEach((report, index) => {
+  console.log(`   ${index + 1}. ${report.name} (${report.mtime.toLocaleString()})`);
+});
+
+console.log('\n🚀 Opening latest report in browser...');
+
+// Try to open in browser (works on macOS, Linux, Windows)
+const openCommand = process.platform === 'darwin' ? 'open' : 
+                   process.platform === 'win32' ? 'start' : 'xdg-open';
+
+exec(`${openCommand} "${fileUrl}"`, (error) => {
+  if (error) {
+    console.log('❌ Could not automatically open browser.');
+    console.log('📋 Please copy and paste this URL into your browser:');
+    console.log(`   ${fileUrl}`);
+  } else {
+    console.log('✅ Report opened in default browser!');
   }
 });
 
-console.log('📊 SUMMARY STATISTICS');
-console.log('====================');
-console.log(`Total Tests: ${totalTests}`);
-console.log(`Total Refusals: ${totalRefusals}`);
-console.log(`Overall Refusal Rate: ${totalTests > 0 ? (totalRefusals/totalTests*100).toFixed(1) : 0}%\n`);
+// Also provide quick stats from JSON data if available
+const dataDir = './data/results';
+if (fs.existsSync(dataDir)) {
+  console.log('\n📈 Quick Stats from Latest Run:');
+  const files = fs.readdirSync(dataDir)
+    .filter(f => f.endsWith('.json') && !f.startsWith('batch_'))
+    .map(f => path.join(dataDir, f));
 
-console.log('📈 By Provider:');
-Object.entries(providerStats).forEach(([provider, stats]) => {
-  const rate = stats.total > 0 ? (stats.refusals/stats.total*100).toFixed(1) : 0;
-  console.log(`   ${provider}: ${stats.refusals}/${stats.total} refused (${rate}%)`);
-});
-
-console.log('\n🌡️ By Intensity Level:');
-Object.entries(intensityStats).forEach(([intensity, stats]) => {
-  const rate = stats.total > 0 ? (stats.refusals/stats.total*100).toFixed(1) : 0;
-  console.log(`   Level ${intensity}: ${stats.refusals}/${stats.total} refused (${rate}%)`);
-});
-
-const totalCost = files.reduce((sum, file) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return sum + data.response.cost;
-  } catch {
-    return sum;
+  if (files.length > 0) {
+    let totalTests = files.length;
+    let totalRefusals = 0;
+    let totalCost = 0;
+    
+    files.forEach(file => {
+      try {
+        const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+        if (data.analysis.isRefusal) totalRefusals++;
+        totalCost += data.response.cost;
+      } catch (err) {
+        // Skip files that can't be read
+      }
+    });
+    
+    console.log(`   Total Tests: ${totalTests}`);
+    console.log(`   Pass Rate: ${totalTests > 0 ? ((totalTests - totalRefusals)/totalTests*100).toFixed(1) : 0}%`);
+    console.log(`   Total Cost: $${totalCost.toFixed(4)}`);
+  } else {
+    console.log('   No test data found.');
   }
-}, 0);
-
-console.log(`\n💰 Total Cost: $${totalCost.toFixed(4)}`);
+} else {
+  console.log('\n📝 No data directory found. JSON results will be available after running tests.');
+}

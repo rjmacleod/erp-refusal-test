@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { Evaluator } from './pipeline/evaluator';
 import { TestCaseManager } from './utils/testCases';
-import { CSVExporter } from './utils/csvExporter';
+import { HTMLReporter } from './utils/htmlReporter';
 import { ModelProvider, ProviderConfig, TestCase } from './types';
 import { ErrorHandler } from './utils/errorHandler';
 
@@ -63,8 +63,8 @@ class ERPRefusalEvaluationSystem {
       const stats = this.evaluator.generateSummaryStats(batchResult.results);
       this.printSummaryStats(stats);
 
-      // Export results
-      await this.exportResults(batchResult.results);
+      // Generate HTML report
+      await this.generateHTMLReport(batchResult.results);
 
     } catch (error) {
       ErrorHandler.logError(error as Error, 'Main evaluation');
@@ -101,23 +101,18 @@ class ERPRefusalEvaluationSystem {
     }
   }
 
-  private async exportResults(results: any[]): Promise<void> {
+  private async generateHTMLReport(results: any[]): Promise<void> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     
     try {
-      // Export detailed results
-      await CSVExporter.exportResults(results, `./exports/detailed_results_${timestamp}.csv`);
-      
-      // Export summary statistics
       const stats = this.evaluator.generateSummaryStats(results);
-      await CSVExporter.exportSummaryStats(stats, `./exports/summary_stats_${timestamp}.csv`);
+      const reportPath = `./reports/evaluation_report_${timestamp}.html`;
       
-      // Export provider comparison
-      await CSVExporter.exportProviderComparison(results, `./exports/provider_comparison_${timestamp}.csv`);
-
-      console.log(`\n💾 Results exported to ./exports/ directory`);
+      await HTMLReporter.generateReport(results, stats, reportPath);
+      console.log(`\n📊 HTML report generated: ${reportPath}`);
+      console.log(`Open in browser: file://${process.cwd()}/${reportPath}`);
     } catch (error) {
-      console.error('Error exporting results:', error);
+      console.error('Error generating HTML report:', error);
     }
   }
 
