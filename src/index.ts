@@ -78,7 +78,7 @@ class ERPRefusalEvaluationSystem {
     return await this.testCaseManager.createBatchFromConfig(
       { min: 4, max: 5 }, // Intensity range
       ['anthropic', 'openai', 'xai'], // All providers
-      ['chat_roleplay', 'character_response'], // Updated template IDs
+      ['erp_contract_v2', 'erp_dual_channel_v2'], // Updated template IDs
       'config_evaluation'
     );
   }

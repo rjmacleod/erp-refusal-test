@@ -24,6 +24,7 @@ export interface Scenario {
   id: string;
   intensity: number;
   character: string;
+  character_description: string;
   scenario: string;
   description: string;
   chat_history: string;
@@ -80,6 +81,7 @@ export class ConfigLoader {
   formatPrompt(template: PromptTemplate, scenario: Scenario): string {
     return template.template
       .replace('{character}', scenario.character)
+      .replace('{character_description}', scenario.character_description)
       .replace('{scenario}', scenario.scenario)
       .replace('{chat_history}', scenario.chat_history);
   }

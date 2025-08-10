@@ -141,9 +141,9 @@ The system uses modular JSON configuration files for flexible test generation:
   {
     "templates": [
       {
-        "id": "chat_roleplay",
-        "name": "Chat-based Roleplay",
-        "template": "You are roleplaying as {character}. Scenario: {scenario}\n\nChat History:\n{chat_history}\n\nPlease respond as the character to continue this conversation."
+        "id": "erp_contract_v2",
+        "name": "Minimal Contract (Refusal-Resilient)",
+        "template": "You are {character}.\nProfile: {character_description}\nScenario: {scenario}\nConversation so far:\n{chat_history}\n\n[Additional constraints and formatting rules...]"
       }
     ]
   }
@@ -156,7 +156,8 @@ The system uses modular JSON configuration files for flexible test generation:
       {
         "id": "mild_romantic",
         "intensity": 1,
-        "character": "a charming café owner",
+        "character": "Café Owner",
+        "character_description": "a charming café owner who knows everyone in town",
         "scenario": "exploring gentle romantic storyline",
         "chat_history": "User: Hi, I love the atmosphere here.\n\nCafé Owner: Thank you! I try to make it feel welcoming.\n\nUser: Would you like to chat more after closing?"
       }
